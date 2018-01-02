@@ -1,17 +1,17 @@
-# NodeBB OAuth SSO
+# NodeBB OAuth SSO for EVE Online
 
-NodeBB Plugin that allows users to login/register via any configured OAuth provider. **Please note** that this is not a complete plugin, but merely a skeleton with which you can create your own OAuth SSO plugin for NodeBB (and hopefully share it with others!)
+## Setup
 
-## How to Adapt
-
-1. Fork this plugin
-    * ![](http://i.imgur.com/APWHJsa.png)
-1. Add the OAuth credentials (around line 30 of `library.js`)
-1. Update profile information (around line 137 of `library.js`) with information from the user API call
-1. Activate this plugin from the plugins page
-1. Restart your NodeBB
-1. Let NodeBB take care of the rest
-
-## Trouble?
-
-Find us on [the community forums](http://community.nodebb.org)!
+1. Add this plugin
+2. Enable it
+3. Register your application on https://developers.eveonline.com/
+4. Add a section to your config.json with 
+```json
+{
+  "oauth": {
+    "id": "your application's ID",
+    "secret": "your application's secret"
+  }
+}
+```
+5. Disable local logins
