@@ -11,6 +11,9 @@
   "oauth": {
     "id": "your application's ID",
     "secret": "your application's secret"
+    "groups": {
+      "your corp or alliance ID": "your forum group name"
+    }
   }
 }
 ```

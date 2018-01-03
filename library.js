@@ -25,7 +25,8 @@
 		path = module.parent.require('path'),
 		nconf = module.parent.require('nconf'),
 		winston = module.parent.require('winston'),
-		async = module.parent.require('async');
+		async = module.parent.require('async'),
+		https = module.parent.require('https');
 
 	var authenticationController = module.parent.require('./controllers/authentication');
 
@@ -68,6 +69,8 @@
 		}),
 		configOk = false,
 		OAuth = {}, passportOAuth, opts;
+
+	var groupmap = nconf.get('oauth:groups');
 
 	if (!constants.name) {
 		winston.error('[sso-oauth] Please specify a name for your OAuth provider (library.js:32)');
@@ -138,7 +141,9 @@
 					oAuthid: profile.id,
 					handle: profile.displayName,
 					email: profile.emails[0].value,
-					isAdmin: profile.isAdmin
+					isAdmin: profile.isAdmin,
+					corpid: profile.corporation_id,
+					allianceid: profile.alliance_id
 				}, function(err, user) {
 					if (err) {
 						return done(err);
@@ -164,27 +169,23 @@
 	};
 
 	OAuth.parseUserReturn = function(data, callback) {
-		// Alter this section to include whatever data is necessary
-		// NodeBB *requires* the following: id, displayName, emails.
-		// Everything else is optional.
-
-		// Find out what is available by uncommenting this line:
-		// console.log(data);
-
 		var profile = {};
 		profile.id = data.CharacterID;
 		profile.displayName = data.CharacterName;
 		profile.emails = [{ value: data.CharacterName + "@localhost" }];
 
-		// Do you want to automatically make somebody an admin? This line might help you do that...
-		// profile.isAdmin = data.isAdmin ? true : false;
-
-		// Delete or comment out the next TWO (2) lines when you are ready to proceed
-		//process.stdout.write('===\nAt this point, you\'ll need to customise the above section to id, displayName, and emails into the "profile" object.\n===');
-		//return callback(new Error('Congrats! So far so good -- please see server log for details'));
-		console.log(profile);
-
-		callback(null, profile);
+		https.get("https://esi.tech.ccp.is/v4/characters/"+data.CharacterID+"/", (res) => {
+                        let data = '';
+                        res.on('end', () => {
+				var body = JSON.parse(data);
+				profile.corporation_id = body.corporation_id;
+				profile.alliance_id = body.alliance_id;
+				callback(null, profile);
+                        });
+			res.on('data', (d) => {
+                                data += d;
+			});
+		});
 	}
 
 	OAuth.login = function(payload, callback) {
@@ -195,6 +196,13 @@
 
 			if (uid !== null) {
 				// Existing User
+				// join them to any groups
+				if (groupmap.hasOwnProperty(payload.corpid)) {
+					Groups.join(groupmap[payload.corpid], uid, function(err) {});
+				};
+				if (groupmap.hasOwnProperty(payload.allianceid)) {
+					Groups.join(groupmap[payload.allianceid], uid, function(err) {});
+				};
 				callback(null, {
 					uid: uid
 				});
@@ -204,6 +212,14 @@
 					// Save provider-specific information to the user
 					User.setUserField(uid, constants.name + 'Id', payload.oAuthid);
 					db.setObjectField(constants.name + 'Id:uid', payload.oAuthid, uid);
+
+					// join them to any groups
+					if (groupmap.hasOwnProperty(payload.corpid)) {
+						Groups.join(groupmap[payload.corpid], uid, function(err) {});
+					};
+					if (groupmap.hasOwnProperty(payload.allianceid)) {
+						Groups.join(groupmap[payload.allianceid], uid, function(err) {});
+					};
 
 					if (payload.isAdmin) {
 						Groups.join('administrators', uid, function(err) {
