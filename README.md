@@ -4,7 +4,7 @@
 
 1. Add this plugin
 2. Enable it
-3. Register your application on https://developers.eveonline.com/
+3. Register your application on https://developers.eveonline.com/ with a callback of https://yourforums/auth/eve/callback
 4. Add a section to your config.json with 
 ```json
 {
