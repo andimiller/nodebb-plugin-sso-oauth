@@ -174,7 +174,7 @@
 		profile.displayName = data.CharacterName;
 		profile.emails = [{ value: data.CharacterName + "@localhost" }];
 
-		https.get("https://esi.tech.ccp.is/v4/characters/"+data.CharacterID+"/", (res) => {
+		https.get("https://esi.evetech.net/v4/characters/"+data.CharacterID+"/", (res) => {
                         let data = '';
                         res.on('end', () => {
 				var body = JSON.parse(data);
@@ -193,16 +193,23 @@
 			if(err) {
 				return callback(err);
 			}
+			winston.info("info");
+			winston.info(uid);
 
 			if (uid !== null) {
 				// Existing User
 				// join them to any groups
-				if (groupmap.hasOwnProperty(payload.corpid)) {
-					Groups.join(groupmap[payload.corpid], uid, function(err) {});
-				};
-				if (groupmap.hasOwnProperty(payload.allianceid)) {
-					Groups.join(groupmap[payload.allianceid], uid, function(err) {});
-				};
+				let affiliations = new Set([payload.corpid.toString(), payload.allianceid.toString()]);
+				let groups = new Set(Object.keys(groupmap));
+				let join = new Set([...affiliations].filter(x => groups.has(x)));
+				let leave = new Set([...groups].filter(x => !affiliations.has(x)));
+
+				join.forEach(g =>
+					Groups.join(groupmap[g], uid, function(err) {})
+				);
+				leave.forEach(g =>
+					Groups.leave(groupmap[g], uid, function(err) {})
+				);
 				callback(null, {
 					uid: uid
 				});
@@ -213,13 +220,19 @@
 					User.setUserField(uid, constants.name + 'Id', payload.oAuthid);
 					db.setObjectField(constants.name + 'Id:uid', payload.oAuthid, uid);
 
-					// join them to any groups
-					if (groupmap.hasOwnProperty(payload.corpid)) {
-						Groups.join(groupmap[payload.corpid], uid, function(err) {});
-					};
-					if (groupmap.hasOwnProperty(payload.allianceid)) {
-						Groups.join(groupmap[payload.allianceid], uid, function(err) {});
-					};
+
+					let affiliations = new Set([payload.corpid.toString(), payload.allianceid.toString()]);
+					let groups = new Set(Object.keys(groupmap));
+					let join = new Set([...affiliations].filter(x => groups.has(x)));
+					let leave = new Set([...groups].filter(x => !affiliations.has(x)));
+
+					join.forEach(g =>
+						Groups.join(groupmap[g], uid, function(err) {})
+					);
+					leave.forEach(g =>
+						Groups.leave(groupmap[g], uid, function(err) {})
+					);
+
 
 					if (payload.isAdmin) {
 						Groups.join('administrators', uid, function(err) {
