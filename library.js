@@ -199,7 +199,7 @@
 			if (uid !== null) {
 				// Existing User
 				// join them to any groups
-				let affiliations = new Set([payload.corpid.toString(), payload.allianceid.toString()]);
+				let affiliations = new Set([payload.corpid.toString(), (payload.allianceid || 0).toString()]);
 				let groups = new Set(Object.keys(groupmap));
 				let join = new Set([...affiliations].filter(x => groups.has(x)));
 				let leave = new Set([...groups].filter(x => !affiliations.has(x)));
@@ -221,7 +221,7 @@
 					db.setObjectField(constants.name + 'Id:uid', payload.oAuthid, uid);
 
 
-					let affiliations = new Set([payload.corpid.toString(), payload.allianceid.toString()]);
+					let affiliations = new Set([payload.corpid.toString(), (payload.allianceid || 0).toString()]);
 					let groups = new Set(Object.keys(groupmap));
 					let join = new Set([...affiliations].filter(x => groups.has(x)));
 					let leave = new Set([...groups].filter(x => !affiliations.has(x)));
